@@ -17,8 +17,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/licenses.html
 """
 
 
-from config import BOT_USERNAME
-
 from pyrogram import Client
 from pyrogram.types import (
     InlineKeyboardButton,
@@ -26,9 +24,10 @@ from pyrogram.types import (
     Message,
 )
 
+from config import BOT_USERNAME
 from driver.decorators import check_blacklist
-from driver.queues import QUEUE, get_queue
 from driver.filters import command, other_filters
+from driver.queues import QUEUE, get_queue, clear_queue
 
 
 keyboard = InlineKeyboardMarkup(
@@ -38,7 +37,7 @@ keyboard = InlineKeyboardMarkup(
 
 @Client.on_message(command(["playlist", f"playlist@{BOT_USERNAME}", "queue", f"queue@{BOT_USERNAME}"]) & other_filters)
 @check_blacklist()
-async def playlist(client, m: Message):
+async def func_show_queue(client, m: Message):
     chat_id = m.chat.id
     if chat_id in QUEUE:
         chat_queue = get_queue(chat_id)
@@ -57,6 +56,21 @@ async def playlist(client, m: Message):
                 hok = chat_queue[x][2]
                 hap = chat_queue[x][3]
                 QUE = QUE + "\n" + f"`#{x}` - [{han}]({hok}) | `{hap}`"
-            await m.reply(QUE, reply_markup=keyboard, disable_web_page_preview=True)
+            await m.reply_text(QUE, reply_markup=keyboard, disable_web_page_preview=True)
     else:
-        await m.reply("❌ **nothing is currently streaming.**")
+        await m.reply_text("❌ **nothing is currently streaming**")
+
+
+@Client.on_message(command(["clear", f"clear@{BOT_USERNAME}", "clearqueue", f"clearqueue@{BOT_USERNAME}"]) & other_filters)
+@check_blacklist()
+async def func_clear_queue(client, m: Message):
+    chat_id = m.chat.id
+    if chat_id in QUEUE:
+        queues = get_queue(chat_id)
+        if len(queues) == 1:
+            await m.reply_text("❌ The queue is empty and there's only 1 stream is currently running.")
+        else:
+            clear_queue(chat_id)
+            await m.reply_text("✅ The queue successfully cleared !")
+    else:
+        await m.reply_text("❌ The queue is empty !")
